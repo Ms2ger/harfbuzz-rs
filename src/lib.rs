@@ -54,3 +54,121 @@ fn types_tag() {
 
     assert_eq!(Tag::from_string(b""), TAG_NONE);
 }
+
+
+/// hb_direction_t
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum Direction {
+    /// HB_DIRECTION_LTR
+    Ltr,
+    /// HB_DIRECTION_RTL
+    Rtl,
+    /// HB_DIRECTION_TTB
+    Ttb,
+    /// HB_DIRECTION_BTT
+    Btt,
+}
+
+impl Direction {
+    /// hb_direction_from_string
+    pub fn from_string(s: &str) -> Result<Direction, ()> {
+        // Lets match loosely: just match the first letter, such that
+        // all of "ltr", "left-to-right", etc work!
+        match s.chars().nth(0) {
+            Some('l') | Some('L') => Ok(Direction::Ltr),
+            Some('r') | Some('R') => Ok(Direction::Rtl),
+            Some('t') | Some('T') => Ok(Direction::Ttb),
+            Some('b') | Some('B') => Ok(Direction::Btt),
+            _ => Err(()),
+        }
+    }
+
+    /// hb_direction_to_string
+    pub fn to_string(self) -> &'static str {
+        match self {
+            Direction::Ltr => "ltr",
+            Direction::Rtl => "rtl",
+            Direction::Ttb => "ttb",
+            Direction::Btt => "btt",
+        }
+    }
+
+    /// HB_DIRECTION_IS_HORIZONTAL
+    pub fn is_horizontal(self) -> bool {
+        match self {
+            Direction::Ltr | Direction::Rtl => true,
+            Direction::Ttb | Direction::Btt => false,
+        }
+    }
+
+    /// HB_DIRECTION_IS_VERTICAL
+    pub fn is_vertical(self) -> bool {
+        !self.is_horizontal()
+    }
+
+    /// HB_DIRECTION_IS_FORWARD
+    pub fn is_forward(self) -> bool {
+        match self {
+            Direction::Ltr | Direction::Ttb => true,
+            Direction::Rtl | Direction::Btt => false,
+        }
+    }
+
+    /// HB_DIRECTION_IS_BACKWARD
+    pub fn is_backward(self) -> bool {
+        !self.is_forward()
+    }
+
+    /// HB_DIRECTION_REVERSE
+    pub fn reverse(self) -> Direction {
+        match self {
+            Direction::Ltr => Direction::Rtl,
+            Direction::Rtl => Direction::Ltr,
+            Direction::Ttb => Direction::Btt,
+            Direction::Btt => Direction::Ttb,
+        }
+    }
+}
+
+/// test_types_direction
+#[test]
+fn types_direction() {
+    assert!(Direction::Ltr.is_horizontal());
+    assert!(Direction::Rtl.is_horizontal());
+    assert!(!Direction::Ttb.is_horizontal());
+    assert!(!Direction::Btt.is_horizontal());
+
+    assert!(!Direction::Ltr.is_vertical());
+    assert!(!Direction::Rtl.is_vertical());
+    assert!(Direction::Ttb.is_vertical());
+    assert!(Direction::Btt.is_vertical());
+
+    assert!(Direction::Ltr.is_forward());
+    assert!(!Direction::Rtl.is_forward());
+    assert!(Direction::Ttb.is_forward());
+    assert!(!Direction::Btt.is_forward());
+
+    assert!(!Direction::Ltr.is_backward());
+    assert!(Direction::Rtl.is_backward());
+    assert!(!Direction::Ttb.is_backward());
+    assert!(Direction::Btt.is_backward());
+
+    assert_eq!(Direction::Ltr.reverse(), Direction::Rtl);
+    assert_eq!(Direction::Rtl.reverse(), Direction::Ltr);
+    assert_eq!(Direction::Ttb.reverse(), Direction::Btt);
+    assert_eq!(Direction::Btt.reverse(), Direction::Ttb);
+
+    assert_eq!(Direction::from_string(""), Err(()));
+    assert_eq!(Direction::from_string("x"), Err(()));
+    assert_eq!(Direction::from_string("r"), Ok(Direction::Rtl));
+    assert_eq!(Direction::from_string("rtl"), Ok(Direction::Rtl));
+    assert_eq!(Direction::from_string("RtL"), Ok(Direction::Rtl));
+    assert_eq!(Direction::from_string("right-to-left"),
+               Ok(Direction::Rtl));
+    assert_eq!(Direction::from_string("ttb"), Ok(Direction::Ttb));
+
+    assert_eq!(Direction::Ltr.to_string(), "ltr");
+    assert_eq!(Direction::Rtl.to_string(), "rtl");
+    assert_eq!(Direction::Ttb.to_string(), "ttb");
+    assert_eq!(Direction::Btt.to_string(), "btt");
+}
